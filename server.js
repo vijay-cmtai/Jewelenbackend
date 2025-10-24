@@ -11,7 +11,7 @@ const orderRoutes = require("./routes/orderRoutes");
 const addressRoutes = require("./routes/addressRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
-const userdashboardRoutes = require("./routes/userdashboardRoutes");
+const userdashboardRoutes = require("./routes/userDashboardRoutes");
 
 const http = require("http");
 const { Server } = require("socket.io");
