@@ -1,50 +1,42 @@
+const asyncHandler = require("express-async-handler");
 const User = require("../models/userModel");
 
-// Wishlist get karna
-exports.getWishlist = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).populate({
-      path: "wishlist",
-      model: "Diamond",
-      select: "stockId shape carat color clarity price imageLink",
-    });
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.status(200).json(user.wishlist);
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
+exports.getWishlist = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id).populate("wishlist");
 
-// Wishlist me add karna
-exports.addToWishlist = async (req, res) => {
-  const { diamondId } = req.body;
-  try {
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { $addToSet: { wishlist: diamondId } },
-      { new: true }
-    );
-    res
-      .status(200)
-      .json({ message: "Added to wishlist", wishlist: user.wishlist });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
   }
-};
 
-// Wishlist se remove karna
-exports.removeFromWishlist = async (req, res) => {
+  res.status(200).json(user.wishlist);
+});
+
+exports.addToWishlist = asyncHandler(async (req, res) => {
+  const { productId } = req.body;
+
+  if (!productId) {
+    res.status(400);
+    throw new Error("Product ID is required");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    { $addToSet: { wishlist: productId } },
+    { new: true }
+  ).populate("wishlist");
+
+  res.status(200).json(user.wishlist);
+});
+
+exports.removeFromWishlist = asyncHandler(async (req, res) => {
   const { diamondId } = req.params;
-  try {
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { $pull: { wishlist: diamondId } },
-      { new: true }
-    );
-    res
-      .status(200)
-      .json({ message: "Removed from wishlist", wishlist: user.wishlist });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
+
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    { $pull: { wishlist: diamondId } },
+    { new: true }
+  ).populate("wishlist");
+
+  res.status(200).json(user.wishlist);
+});

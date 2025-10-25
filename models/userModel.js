@@ -15,34 +15,38 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     role: {
       type: String,
-      enum: ["Admin", "Buyer", "Supplier"],
-      required: true,
+      enum: ["Admin", "User"],
+      default: "User",
     },
     status: {
       type: String,
       enum: ["Pending", "Approved", "Rejected"],
-      default: "Pending",
+      default: "Approved",
     },
-    // ✅ UPDATED: Cart with quantity support using Mixed type
-    cart: {
-      type: Schema.Types.Mixed,
-      default: [],
+    profilePicture: {
+      public_id: { type: String },
+      url: { type: String },
     },
-    // ✅ Wishlist remains simple array
+    cart: [
+      {
+        jewelry: {
+          type: Schema.Types.ObjectId,
+          ref: "Jewelry",
+          required: true,
+        },
+        quantity: {
+          type: Number,
+          required: true,
+          default: 1,
+        },
+      },
+    ],
     wishlist: [
       {
         type: Schema.Types.ObjectId,
         ref: "Jewelry",
       },
     ],
-    companyName: { type: String },
-    businessType: { type: String },
-    companyCountry: { type: String },
-    companyWebsite: { type: String },
-    businessDocument: {
-      public_id: { type: String },
-      url: { type: String },
-    },
   },
   { timestamps: true }
 );

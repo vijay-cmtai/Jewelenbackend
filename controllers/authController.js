@@ -7,9 +7,8 @@ const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
 };
 
-// --- AUTHENTICATION ---
 exports.register = asyncHandler(async (req, res) => {
-  const { role, name, email, password, ...businessData } = req.body;
+  const { name, email, password, role } = req.body;
 
   if (!name || !email || !password || !role) {
     res.status(400);
@@ -26,28 +25,34 @@ exports.register = asyncHandler(async (req, res) => {
     name,
     email,
     password,
-    role,
-    status: role === "Admin" ? "Approved" : "Pending",
-    ...businessData,
+    role: role,
+    // Status ki logic hata di gayi hai, woh ab model se default 'Approved' aayega
   };
 
   if (req.file) {
-    userData.businessDocument = {
+    userData.profilePicture = {
       public_id: req.file.filename,
       url: req.file.path,
     };
   }
 
-  await User.create(userData);
+  const user = await User.create(userData);
 
-  res.status(201).json({
-    message:
-      role === "Admin"
-        ? "Admin registered successfully!"
-        : "Registration request submitted. Waiting for admin approval.",
-  });
+  if (user) {
+    res.status(201).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      token: generateToken(user._id),
+    });
+  } else {
+    res.status(400);
+    throw new Error("Invalid user data");
+  }
 });
 
+// Baaki ka code waisa hi rahega
 exports.login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
@@ -75,7 +80,6 @@ exports.getMe = asyncHandler(async (req, res) => {
   res.status(200).json(req.user);
 });
 
-// --- USER MANAGEMENT (ADMIN) ---
 exports.getAllUsers = asyncHandler(async (req, res) => {
   const users = await User.find({}).select("-password").sort({ createdAt: -1 });
   res.status(200).json(users);
