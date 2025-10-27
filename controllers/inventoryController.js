@@ -1,5 +1,5 @@
 const asyncHandler = require("express-async-handler");
-const Jewelry = require("../models/diamondModel.js");
+const Jewelry = require("../models/diamondModel.js"); // Make sure path is correct to new model
 const { Readable } = require("stream");
 const axios = require("axios");
 const ftp = require("basic-ftp");
@@ -56,7 +56,6 @@ const getCollections = asyncHandler(async (req, res) => {
   res.json(collectionsWithImages.filter((c) => c.imageUrl));
 });
 
-// --- MODIFIED ---
 const addJewelry = asyncHandler(async (req, res) => {
   const { sku, name, price, category, sellerId, originalPrice } = req.body;
   if (!sku || !name || !price || !category) {
@@ -66,7 +65,6 @@ const addJewelry = asyncHandler(async (req, res) => {
     });
   }
 
-  // Validate that the discounted price is less than the original price
   if (originalPrice != null && Number(price) >= Number(originalPrice)) {
     return res.status(400).json({
       success: false,
@@ -92,6 +90,7 @@ const addJewelry = asyncHandler(async (req, res) => {
     });
   }
 
+  // No change needed here. If `tax` is in req.body, it will be added.
   const jewelry = await Jewelry.create({
     ...req.body,
     seller: sellerIdToAssign,
@@ -100,7 +99,6 @@ const addJewelry = asyncHandler(async (req, res) => {
   res.status(201).json(jewelry);
 });
 
-// --- MODIFIED ---
 const uploadFromCsv = asyncHandler(async (req, res) => {
   if (!req.file)
     return res
@@ -126,7 +124,6 @@ const uploadFromCsv = asyncHandler(async (req, res) => {
     userMapping
   );
 
-  // Validate all items before starting the database operation
   for (const item of results) {
     if (
       item.originalPrice != null &&
@@ -139,6 +136,7 @@ const uploadFromCsv = asyncHandler(async (req, res) => {
     }
   }
 
+  // No change needed here. If `tax` is mapped from CSV, it will be in the `item` object.
   const operations = results.map((item) => ({
     updateOne: {
       filter: { sku: item.sku, seller: sellerIdToAssign },
@@ -228,7 +226,6 @@ const getJewelryBySku = asyncHandler(async (req, res) => {
   res.json(jewelry);
 });
 
-// --- MODIFIED ---
 const updateJewelry = asyncHandler(async (req, res) => {
   const jewelry = await Jewelry.findById(req.params.id);
 
@@ -236,6 +233,7 @@ const updateJewelry = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: "Jewelry not found" });
   }
 
+  // No change needed here. If `tax` is in req.body, it will be updated.
   Object.assign(jewelry, req.body);
 
   if (
