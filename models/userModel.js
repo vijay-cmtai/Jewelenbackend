@@ -27,26 +27,22 @@ const userSchema = new mongoose.Schema(
       public_id: { type: String },
       url: { type: String },
     },
-    cart: [
-      {
-        jewelry: {
-          type: Schema.Types.ObjectId,
-          ref: "Jewelry",
-          required: true,
-        },
-        quantity: {
-          type: Number,
-          required: true,
-          default: 1,
-        },
-      },
-    ],
-    wishlist: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Jewelry",
-      },
-    ],
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    otp: {
+      type: String,
+    },
+    otpExpiry: {
+      type: Date,
+    },
+    forgotPasswordToken: {
+      type: String,
+    },
+    forgotPasswordExpiry: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );
