@@ -1,42 +1,59 @@
 const asyncHandler = require("express-async-handler");
 const User = require("../models/userModel");
 
-exports.getWishlist = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user.id).populate("wishlist");
+// @desc    Toggle (add/remove) an item in the user's wishlist
+// @route   POST /api/wishlist/toggle
+// @access  Private
+exports.toggleWishlist = asyncHandler(async (req, res) => {
+  const { productId } = req.body;
+  const user = await User.findById(req.user.id);
 
   if (!user) {
     res.status(404);
     throw new Error("User not found");
   }
 
-  res.status(200).json(user.wishlist);
-});
+  // Check if the product is already in the wishlist
+  const itemIndex = user.wishlist.findIndex(
+    (itemId) => itemId.toString() === productId
+  );
 
-exports.addToWishlist = asyncHandler(async (req, res) => {
-  const { productId } = req.body;
-
-  if (!productId) {
-    res.status(400);
-    throw new Error("Product ID is required");
+  if (itemIndex > -1) {
+    // If product exists in wishlist, remove it
+    user.wishlist.splice(itemIndex, 1);
+  } else {
+    // If product does not exist, add it
+    user.wishlist.push(productId);
   }
 
-  const user = await User.findByIdAndUpdate(
-    req.user.id,
-    { $addToSet: { wishlist: productId } },
-    { new: true }
-  ).populate("wishlist");
+  // Save the updated user document
+  await user.save();
 
-  res.status(200).json(user.wishlist);
+  // Populate the wishlist with product details before sending it back
+  // Yeh zaroori hai taaki frontend ko ID ke saath-saath name, price, images bhi milein
+  const populatedUser = await user.populate({
+    path: "wishlist",
+    model: "Jewelry", // Model ka naam jise populate karna hai
+    select: "_id name sku price images", // Frontend ko jo fields chahiye
+  });
+
+  res.status(200).json(populatedUser.wishlist);
 });
 
-exports.removeFromWishlist = asyncHandler(async (req, res) => {
-  const { diamondId } = req.params;
+// @desc    Get the user's wishlist
+// @route   GET /api/wishlist
+// @access  Private
+exports.getWishlist = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id).populate({
+    path: "wishlist",
+    model: "Jewelry",
+    select: "_id name sku price images",
+  });
 
-  const user = await User.findByIdAndUpdate(
-    req.user.id,
-    { $pull: { wishlist: diamondId } },
-    { new: true }
-  ).populate("wishlist");
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
 
   res.status(200).json(user.wishlist);
 });
