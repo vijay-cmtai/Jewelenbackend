@@ -1,11 +1,12 @@
-// routes/authRoutes.js
-
 const express = require("express");
 const router = express.Router();
 
 const {
   register,
   login,
+  verifyOtp,
+  forgotPassword,
+  resetPassword,
   getMe,
   getAllUsers,
   getUserDetailsById,
@@ -16,11 +17,11 @@ const {
 const { protect, isAdmin } = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware");
 
-// YAHAN BADLAV KIYA GAYA HAI
-// Multer ko bataya gaya hai ki 'profilePicture' naam ki ek file aayegi
 router.post("/register", upload.single("profilePicture"), register);
-
+router.post("/verify-otp", verifyOtp);
 router.post("/login", login);
+router.post("/forgot-password", forgotPassword);
+router.put("/reset-password/:token", resetPassword);
 
 router.get("/me", protect, getMe);
 
