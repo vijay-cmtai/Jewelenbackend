@@ -21,10 +21,15 @@ const jewelrySchema = new Schema(
       type: Number,
       required: [true, "Price zaroori hai."],
     },
-    // --- YEH NAYI FIELD ADD KI GAYI HAI ---
     originalPrice: {
       type: Number,
-      required: false, // Yeh zaroori nahi hai, sirf deals ke liye
+      required: false,
+    },
+    // --- YEH NAYA FIELD ADD KIYA GAYA HAI ---
+    tax: {
+      type: Number,
+      required: false, // Yeh zaroori nahi hai
+      default: 0, // Agar tax nahi diya to 0% maan lo
     },
     // ------------------------------------
     images: [
