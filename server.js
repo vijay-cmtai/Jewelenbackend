@@ -17,6 +17,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 const { startInventorySync } = require("./cron/scheduler");
 const blogRoutes = require("./routes/blogRoutes");
+const couponRoutes = require("./routes/couponRoutes");
 
 connectDB();
 
@@ -51,6 +52,8 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/user-dashboard", userdashboardRoutes);
 app.use("/api/blogs", blogRoutes);
+app.use("/api/coupons", couponRoutes);
+
 io.on("connection", (socket) => {
   console.log("✅ A new user connected:", socket.id);
 

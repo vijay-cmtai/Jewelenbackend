@@ -27,11 +27,13 @@ const userSchema = new mongoose.Schema(
       public_id: { type: String },
       url: { type: String },
     },
+
+    // --- YEH NAYE FIELDS ADD KIYE GAYE HAIN ---
     cart: [
       {
         jewelry: {
           type: Schema.Types.ObjectId,
-          ref: "Jewelry",
+          ref: "Jewelry", // Yeh 'Jewelry' model ko refer karta hai
           required: true,
         },
         quantity: {
@@ -44,9 +46,27 @@ const userSchema = new mongoose.Schema(
     wishlist: [
       {
         type: Schema.Types.ObjectId,
-        ref: "Jewelry",
+        ref: "Jewelry", // Yeh bhi 'Jewelry' model ko refer karta hai
       },
     ],
+    // --- END OF CHANGES ---
+
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    otp: {
+      type: String,
+    },
+    otpExpiry: {
+      type: Date,
+    },
+    forgotPasswordToken: {
+      type: String,
+    },
+    forgotPasswordExpiry: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );

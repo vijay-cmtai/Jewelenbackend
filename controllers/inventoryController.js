@@ -1,5 +1,5 @@
 const asyncHandler = require("express-async-handler");
-const Jewelry = require("../models/diamondModel.js");
+const Jewelry = require("../models/diamondModel.js"); // Make sure path is correct to new model
 const { Readable } = require("stream");
 const axios = require("axios");
 const ftp = require("basic-ftp");
@@ -57,11 +57,18 @@ const getCollections = asyncHandler(async (req, res) => {
 });
 
 const addJewelry = asyncHandler(async (req, res) => {
-  const { sku, name, price, category, sellerId } = req.body;
+  const { sku, name, price, category, sellerId, originalPrice } = req.body;
   if (!sku || !name || !price || !category) {
     return res.status(400).json({
       success: false,
       message: "SKU, Name, Price, and Category are required.",
+    });
+  }
+
+  if (originalPrice != null && Number(price) >= Number(originalPrice)) {
+    return res.status(400).json({
+      success: false,
+      message: "Discounted price (price) must be less than the original price.",
     });
   }
 
@@ -83,6 +90,7 @@ const addJewelry = asyncHandler(async (req, res) => {
     });
   }
 
+  // No change needed here. If `tax` is in req.body, it will be added.
   const jewelry = await Jewelry.create({
     ...req.body,
     seller: sellerIdToAssign,
@@ -116,6 +124,19 @@ const uploadFromCsv = asyncHandler(async (req, res) => {
     userMapping
   );
 
+  for (const item of results) {
+    if (
+      item.originalPrice != null &&
+      Number(item.price) >= Number(item.originalPrice)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: `Data validation failed for SKU '${item.sku}'. Discounted price must be less than original price.`,
+      });
+    }
+  }
+
+  // No change needed here. If `tax` is mapped from CSV, it will be in the `item` object.
   const operations = results.map((item) => ({
     updateOne: {
       filter: { sku: item.sku, seller: sellerIdToAssign },
@@ -206,15 +227,34 @@ const getJewelryBySku = asyncHandler(async (req, res) => {
 });
 
 const updateJewelry = asyncHandler(async (req, res) => {
-  const jewelry = await Jewelry.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  });
+  const jewelry = await Jewelry.findById(req.params.id);
+
   if (!jewelry) {
     return res.status(404).json({ message: "Jewelry not found" });
   }
 
-  res.json(jewelry);
+  // No change needed here. If `tax` is in req.body, it will be updated.
+  Object.assign(jewelry, req.body);
+
+  if (
+    req.body.hasOwnProperty("originalPrice") &&
+    req.body.originalPrice === null
+  ) {
+    jewelry.originalPrice = undefined;
+  }
+
+  if (
+    jewelry.originalPrice != null &&
+    Number(jewelry.price) >= Number(jewelry.originalPrice)
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Discounted price (price) must be less than the original price.",
+    });
+  }
+
+  const updatedJewelry = await jewelry.save();
+  res.json(updatedJewelry);
 });
 
 const deleteJewelry = asyncHandler(async (req, res) => {

@@ -1,3 +1,5 @@
+// File: models/orderModel.js
+
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
@@ -20,19 +22,23 @@ const orderSchema = new mongoose.Schema(
           required: true,
           ref: "Jewelry",
         },
-        quantity: {
-          type: Number,
-          required: true,
-        },
-        priceAtOrder: {
-          type: Number,
-          required: true,
-        },
+        quantity: { type: Number, required: true },
+        priceAtOrder: { type: Number, required: true },
       },
     ],
     totalAmount: {
+      // This is the original amount before discount
       type: Number,
       required: true,
+    },
+    // ✅ NEW: Fields for discount
+    couponCode: {
+      type: String,
+      default: null,
+    },
+    discountAmount: {
+      type: Number,
+      default: 0,
     },
     orderStatus: {
       type: String,
