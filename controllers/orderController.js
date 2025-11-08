@@ -65,19 +65,15 @@ exports.createOrderAndInitiatePayment = asyncHandler(async (req, res) => {
           .status(400)
           .json({ success: false, message: "This coupon has expired." });
       if (coupon.timesUsed >= coupon.usageLimit)
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "This coupon has reached its usage limit.",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "This coupon has reached its usage limit.",
+        });
       if (frontendTotalAmount < coupon.minPurchaseAmount)
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: `Minimum purchase of ₹${coupon.minPurchaseAmount} is required.`,
-          });
+        return res.status(400).json({
+          success: false,
+          message: `Minimum purchase of ₹${coupon.minPurchaseAmount} is required.`,
+        });
 
       if (coupon.discountType === "Percentage") {
         discountAmount = (frontendTotalAmount * coupon.discountValue) / 100;
@@ -145,12 +141,10 @@ exports.verifyPayment = asyncHandler(async (req, res) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
       req.body;
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Missing payment verification details",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Missing payment verification details",
+      });
     }
     const order = await Order.findOne({
       "paymentInfo.razorpay_order_id": razorpay_order_id,
@@ -184,13 +178,11 @@ exports.verifyPayment = asyncHandler(async (req, res) => {
       }
 
       await User.findByIdAndUpdate(req.user.id, { cart: [] });
-      res
-        .status(200)
-        .json({
-          success: true,
-          message: "Payment verified successfully.",
-          orderId: order._id,
-        });
+      res.status(200).json({
+        success: true,
+        message: "Payment verified successfully.",
+        orderId: order._id,
+      });
     } else {
       order.paymentInfo.payment_status = "Failed";
       order.orderStatus = "Failed";

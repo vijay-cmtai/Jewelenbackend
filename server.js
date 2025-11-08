@@ -12,12 +12,12 @@ const addressRoutes = require("./routes/addressRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const userdashboardRoutes = require("./routes/userDashboardRoutes");
+const couponRoutes = require("./routes/couponRoutes");
 
 const http = require("http");
 const { Server } = require("socket.io");
 const { startInventorySync } = require("./cron/scheduler");
 const blogRoutes = require("./routes/blogRoutes");
-const couponRoutes = require("./routes/couponRoutes");
 
 connectDB();
 
