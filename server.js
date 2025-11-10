@@ -13,6 +13,7 @@ const notificationRoutes = require("./routes/notificationRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const userdashboardRoutes = require("./routes/userDashboardRoutes");
 const couponRoutes = require("./routes/couponRoutes");
+const supplierRoutes = require("./routes/supplierRoutes");
 const http = require("http");
 const { Server } = require("socket.io");
 const { startInventorySync } = require("./cron/scheduler");
@@ -64,6 +65,8 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/user-dashboard", userdashboardRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/coupons", couponRoutes);
+app.use('/api/supplier', supplierRoutes);
+
 
 io.on("connection", (socket) => {
   console.log("✅ A new user connected:", socket.id);
