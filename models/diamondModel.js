@@ -25,13 +25,11 @@ const jewelrySchema = new Schema(
       type: Number,
       required: false,
     },
-    // --- YEH NAYA FIELD ADD KIYA GAYA HAI ---
     tax: {
       type: Number,
-      required: false, // Yeh zaroori nahi hai
-      default: 0, // Agar tax nahi diya to 0% maan lo
+      required: false,
+      default: 0,
     },
-    // ------------------------------------
     images: [
       {
         type: String,
@@ -56,6 +54,12 @@ const jewelrySchema = new Schema(
       ],
       trim: true,
     },
+    status: {
+      type: String,
+      enum: ["Pending", "Approved", "Rejected"],
+      default: "Pending", 
+    },
+    // -----------------------------------------------------------------
     metal: {
       type: {
         type: String,

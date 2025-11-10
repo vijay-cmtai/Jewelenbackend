@@ -5,9 +5,9 @@ const {
   getBlogPosts,
   getBlogPostBySlug,
 } = require("../controllers/blogController");
-const { protect, isAdmin } = require("../middleware/authMiddleware");
+const { protect, admin } = require("../middleware/authMiddleware");
 
-router.route("/").get(getBlogPosts).post(protect,createBlogPost);
+router.route("/").get(getBlogPosts).post(protect, createBlogPost);
 
 router.route("/:slug").get(getBlogPostBySlug);
 

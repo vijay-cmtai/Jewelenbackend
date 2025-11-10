@@ -1,5 +1,3 @@
-// middleware/authMiddleware.js
-
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 
@@ -35,7 +33,9 @@ exports.protect = async (req, res, next) => {
   }
 };
 
-exports.isAdmin = (req, res, next) => {
+// --- CHANGE YAHAN HAI ---
+// Maine 'admin' ko 'admin' kar diya hai
+exports.admin = (req, res, next) => {
   if (req.user && req.user.role === "Admin") {
     next();
   } else {

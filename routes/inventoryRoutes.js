@@ -16,7 +16,14 @@ const {
   previewHeadersFromUrl,
   previewFtpHeaders,
   getCollections,
+  getPendingJewelry,
+  approveJewelry,
+  rejectJewelry,
 } = require("../controllers/inventoryController.js");
+
+router.route("/pending").get(protect, admin, getPendingJewelry);
+router.route("/:id/approve").put(protect, admin, approveJewelry);
+router.route("/:id/reject").put(protect, admin, rejectJewelry);
 
 router.route("/").get(getJewelry);
 router.route("/add-manual").post(protect, addJewelry);
@@ -29,7 +36,6 @@ router.route("/preview-csv-headers").post(protect, previewCsvHeaders);
 router.route("/preview-headers-url").post(protect, previewHeadersFromUrl);
 router.route("/preview-ftp-headers").post(protect, previewFtpHeaders);
 
-// Yeh route '/:id' se pehle honi chahiye
 router.route("/collections").get(getCollections);
 
 router.route("/sku/:sku").get(getJewelryBySku);

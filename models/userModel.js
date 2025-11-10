@@ -1,3 +1,5 @@
+// File: models/userModel.js
+
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const Schema = mongoose.Schema;
@@ -15,7 +17,8 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     role: {
       type: String,
-      enum: ["Admin", "User"],
+      // ✅ YAHAN "Supplier" ROLE ADD KIYA GAYA HAI
+      enum: ["Admin", "User", "Supplier"],
       default: "User",
     },
     status: {
@@ -27,13 +30,11 @@ const userSchema = new mongoose.Schema(
       public_id: { type: String },
       url: { type: String },
     },
-
-    // --- YEH NAYE FIELDS ADD KIYE GAYE HAIN ---
     cart: [
       {
         jewelry: {
           type: Schema.Types.ObjectId,
-          ref: "Jewelry", // Yeh 'Jewelry' model ko refer karta hai
+          ref: "Jewelry",
           required: true,
         },
         quantity: {
@@ -46,11 +47,9 @@ const userSchema = new mongoose.Schema(
     wishlist: [
       {
         type: Schema.Types.ObjectId,
-        ref: "Jewelry", // Yeh bhi 'Jewelry' model ko refer karta hai
+        ref: "Jewelry",
       },
     ],
-    // --- END OF CHANGES ---
-
     isVerified: {
       type: Boolean,
       default: false,

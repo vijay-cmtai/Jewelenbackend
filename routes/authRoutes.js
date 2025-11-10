@@ -14,7 +14,7 @@ const {
   deleteUser,
 } = require("../controllers/authController");
 
-const { protect, isAdmin } = require("../middleware/authMiddleware");
+const { protect, admin } = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware");
 
 router.post("/register", upload.single("profilePicture"), register);
@@ -25,9 +25,9 @@ router.put("/reset-password/:token", resetPassword);
 
 router.get("/me", protect, getMe);
 
-router.get("/all", protect, isAdmin, getAllUsers);
-router.get("/:id", protect, isAdmin, getUserDetailsById);
-router.put("/:id", protect, isAdmin, updateUser);
-router.delete("/:id", protect, isAdmin, deleteUser);
+router.get("/all", protect, admin, getAllUsers);
+router.get("/:id", protect, admin, getUserDetailsById);
+router.put("/:id", protect, admin, updateUser);
+router.delete("/:id", protect, admin, deleteUser);
 
 module.exports = router;

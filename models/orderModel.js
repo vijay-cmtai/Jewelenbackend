@@ -24,14 +24,18 @@ const orderSchema = new mongoose.Schema(
         },
         quantity: { type: Number, required: true },
         priceAtOrder: { type: Number, required: true },
+        status: {
+          type: String,
+          required: true,
+          enum: ["Processing", "Shipped", "Delivered", "Cancelled"],
+          default: "Processing",
+        },
       },
     ],
     totalAmount: {
-      // This is the original amount before discount
       type: Number,
       required: true,
     },
-    // ✅ NEW: Fields for discount
     couponCode: {
       type: String,
       default: null,

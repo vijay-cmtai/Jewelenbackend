@@ -2,7 +2,7 @@
 
 const express = require("express");
 const router = express.Router();
-const { protect, isAdmin } = require("../middleware/authMiddleware.js");
+const { protect, admin } = require("../middleware/authMiddleware.js");
 const {
   createOrderAndInitiatePayment,
   verifyPayment,
@@ -13,27 +13,32 @@ const {
   getAllOrders,
   updateOrderStatus,
   deleteOrder,
-  generateInvoice, // <-- NEW: Import the invoice generator
+  generateInvoice,
+  updateSellerOrderItemStatus,
 } = require("../controllers/orderController.js");
 
 router
   .route("/")
   .post(protect, createOrderAndInitiatePayment)
-  .get(protect, isAdmin, getAllOrders);
+  .get(protect, admin, getAllOrders);
 
 router.route("/verify-payment").post(protect, verifyPayment);
 router.route("/my-orders").get(protect, getMyOrders);
 router.route("/seller-orders").get(protect, getSellerOrders);
 
-// <-- NEW: Add the invoice download route
 router.route("/:id/invoice").get(protect, generateInvoice);
+
+// This new route allows a seller to update the status of a specific item in an order
+router
+  .route("/:orderId/items/:itemId/status")
+  .put(protect, updateSellerOrderItemStatus);
 
 router
   .route("/:id")
   .get(protect, getSingleOrder)
-  .delete(protect, isAdmin, deleteOrder);
+  .delete(protect, admin, deleteOrder);
 
 router.route("/:id/cancel").post(protect, cancelOrderAndRefund);
-router.route("/:id/status").put(protect, isAdmin, updateOrderStatus);
+router.route("/:id/status").put(protect, admin, updateOrderStatus);
 
 module.exports = router;

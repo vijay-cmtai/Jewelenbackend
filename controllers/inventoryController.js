@@ -1,5 +1,7 @@
 const asyncHandler = require("express-async-handler");
-const Jewelry = require("../models/diamondModel.js"); // Make sure path is correct to new model
+const jwt = require("jsonwebtoken");
+const User = require("../models/userModel.js");
+const Jewelry = require("../models/diamondModel.js");
 const { Readable } = require("stream");
 const axios = require("axios");
 const ftp = require("basic-ftp");
@@ -40,6 +42,7 @@ const getCollections = asyncHandler(async (req, res) => {
     categories.map(async (category) => {
       const productForImage = await Jewelry.findOne({
         category: category,
+        status: "Approved",
       }).select("images");
       const imageUrl =
         productForImage && productForImage.images.length > 0
@@ -90,13 +93,20 @@ const addJewelry = asyncHandler(async (req, res) => {
     });
   }
 
-  // No change needed here. If `tax` is in req.body, it will be added.
+  const status = req.user.role === "Admin" ? "Approved" : "Pending";
+
   const jewelry = await Jewelry.create({
     ...req.body,
     seller: sellerIdToAssign,
+    status: status,
   });
 
-  res.status(201).json(jewelry);
+  const responseMessage =
+    status === "Pending"
+      ? "Jewelry added successfully and is pending for approval."
+      : "Jewelry added and approved successfully.";
+
+  res.status(201).json({ jewelry, message: responseMessage });
 });
 
 const uploadFromCsv = asyncHandler(async (req, res) => {
@@ -136,11 +146,12 @@ const uploadFromCsv = asyncHandler(async (req, res) => {
     }
   }
 
-  // No change needed here. If `tax` is mapped from CSV, it will be in the `item` object.
+  const status = req.user.role === "Admin" ? "Approved" : "Pending";
+
   const operations = results.map((item) => ({
     updateOne: {
       filter: { sku: item.sku, seller: sellerIdToAssign },
-      update: { $set: { ...item, seller: sellerIdToAssign } },
+      update: { $set: { ...item, seller: sellerIdToAssign, status: status } },
       upsert: true,
     },
   }));
@@ -162,6 +173,20 @@ const uploadFromCsv = asyncHandler(async (req, res) => {
 });
 
 const getJewelry = asyncHandler(async (req, res) => {
+  let user = null;
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
+    try {
+      const token = req.headers.authorization.split(" ")[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      user = await User.findById(decoded.id).select("-password");
+    } catch (error) {
+      // Token invalid, proceed as guest
+    }
+  }
+
   const pageSize = 10;
   const page = Number(req.query.page) || 1;
   const searchTerm = req.query.search
@@ -180,10 +205,15 @@ const getJewelry = asyncHandler(async (req, res) => {
     filter.category = req.query.category;
   }
 
-  if (req.user) {
-    if (req.user.role === "Admin" && req.query.sellerId)
+  if (user && user.role === "Admin") {
+    if (req.query.status && req.query.status !== "all") {
+      filter.status = req.query.status;
+    }
+    if (req.query.sellerId) {
       filter.seller = req.query.sellerId;
-    else if (req.user.role !== "Admin") filter.seller = req.user._id;
+    }
+  } else {
+    filter.status = "Approved";
   }
 
   const count = await Jewelry.countDocuments(filter);
@@ -211,7 +241,54 @@ const getJewelryById = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: "Jewelry not found" });
   }
 
+  const isOwner =
+    req.user && jewelry.seller._id.toString() === req.user._id.toString();
+  const isAdmin = req.user && req.user.role === "Admin";
+
+  if (jewelry.status !== "Approved" && !isOwner && !isAdmin) {
+    return res.status(404).json({ message: "Jewelry not found" });
+  }
+
   res.json(jewelry);
+});
+
+const getPendingJewelry = asyncHandler(async (req, res) => {
+  const pendingItems = await Jewelry.find({ status: "Pending" })
+    .populate("seller", "name email")
+    .sort({ createdAt: -1 });
+  res.json(pendingItems);
+});
+
+const approveJewelry = asyncHandler(async (req, res) => {
+  const jewelry = await Jewelry.findById(req.params.id);
+
+  if (jewelry) {
+    jewelry.status = "Approved";
+    const updatedJewelry = await jewelry.save();
+    res.json({
+      message: "Jewelry approved successfully.",
+      jewelry: updatedJewelry,
+    });
+  } else {
+    res.status(404);
+    throw new Error("Jewelry not found");
+  }
+});
+
+const rejectJewelry = asyncHandler(async (req, res) => {
+  const jewelry = await Jewelry.findById(req.params.id);
+
+  if (jewelry) {
+    jewelry.status = "Rejected";
+    const updatedJewelry = await jewelry.save();
+    res.json({
+      message: "Jewelry rejected successfully.",
+      jewelry: updatedJewelry,
+    });
+  } else {
+    res.status(404);
+    throw new Error("Jewelry not found");
+  }
 });
 
 const getJewelryBySku = asyncHandler(async (req, res) => {
@@ -220,6 +297,14 @@ const getJewelryBySku = asyncHandler(async (req, res) => {
     "name email"
   );
   if (!jewelry) {
+    return res.status(404).json({ message: "Jewelry not found" });
+  }
+
+  const isOwner =
+    req.user && jewelry.seller._id.toString() === req.user._id.toString();
+  const isAdmin = req.user && req.user.role === "Admin";
+
+  if (jewelry.status !== "Approved" && !isOwner && !isAdmin) {
     return res.status(404).json({ message: "Jewelry not found" });
   }
 
@@ -233,7 +318,12 @@ const updateJewelry = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: "Jewelry not found" });
   }
 
-  // No change needed here. If `tax` is in req.body, it will be updated.
+  if (req.body.status && req.user.role !== "Admin") {
+    return res
+      .status(403)
+      .json({ message: "You are not authorized to change the status." });
+  }
+
   Object.assign(jewelry, req.body);
 
   if (
@@ -367,4 +457,7 @@ module.exports = {
   previewHeadersFromUrl,
   previewFtpHeaders,
   getCollections,
+  getPendingJewelry,
+  approveJewelry,
+  rejectJewelry,
 };

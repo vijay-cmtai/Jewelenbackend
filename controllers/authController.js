@@ -1,9 +1,11 @@
+// File: controllers/authController.js
+
 const User = require("../models/userModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const asyncHandler = require("express-async-handler");
 const crypto = require("crypto");
-const sendEmail = require("../utils/mailer"); // Aapko mailer file banani hogi
+const sendEmail = require("../utils/mailer");
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
@@ -26,7 +28,7 @@ exports.register = asyncHandler(async (req, res) => {
 
   const emailHtml = `
     <div style="font-family: sans-serif; text-align: center; padding: 20px;">
-      <h2>Welcome!</h2>
+      <h2>Welcome to Jewelen!</h2>
       <p>Hi ${name}, thank you for registering. Please use the following OTP to verify your email.</p>
       <p style="font-size: 24px; font-weight: bold;">${otp}</p>
       <p>This OTP is valid for 10 minutes.</p>
@@ -56,6 +58,7 @@ exports.register = asyncHandler(async (req, res) => {
     });
   }
 
+  // ✅ YAHAN LOGIC CHANGE KIYA GAYA HAI
   const userData = {
     name,
     email,
@@ -64,6 +67,8 @@ exports.register = asyncHandler(async (req, res) => {
     otp,
     otpExpiry,
     isVerified: false,
+    // Sirf Supplier ka status 'Pending' rahega
+    status: role === "Supplier" ? "Pending" : "Approved",
   };
 
   if (req.file) {
@@ -80,10 +85,15 @@ exports.register = asyncHandler(async (req, res) => {
     html: emailHtml,
   });
 
-  res.status(201).json({
-    success: true,
-    message: `User registered. An OTP has been sent to ${email}. Please verify.`,
-  });
+  // ✅ MESSAGE LOGIC BHI UPDATE KIYA GAYA HAI
+  let message;
+  if (role === "Supplier") {
+    message = `Supplier account request sent! An OTP has been sent to ${email}.`;
+  } else {
+    message = `Registration successful. An OTP has been sent to ${email}. Please verify.`;
+  }
+
+  res.status(201).json({ success: true, message });
 });
 
 exports.verifyOtp = asyncHandler(async (req, res) => {
@@ -109,6 +119,15 @@ exports.verifyOtp = asyncHandler(async (req, res) => {
   user.otpExpiry = undefined;
   await user.save({ validateBeforeSave: false });
 
+  // ✅ YAHAN BHI SIRF SUPPLIER KE LIYE CHECK LAGEGA
+  if (user.role === "Supplier" && user.status !== "Approved") {
+    return res.status(200).json({
+      success: true,
+      message: `Email verified successfully. Your Supplier account is pending approval by an administrator.`,
+    });
+  }
+
+  // Admin aur User ko turant token mil jaayega
   res.status(200).json({
     _id: user._id,
     name: user.name,
@@ -135,7 +154,9 @@ exports.login = asyncHandler(async (req, res) => {
 
   if (user.status !== "Approved") {
     res.status(403);
-    throw new Error(`Your account is currently ${user.status}.`);
+    throw new Error(
+      `Your account is currently ${user.status}. Please wait for admin approval.`
+    );
   }
 
   res.json({
@@ -157,14 +178,11 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
   }
 
   const resetToken = crypto.randomBytes(32).toString("hex");
-
   user.forgotPasswordToken = crypto
     .createHash("sha256")
     .update(resetToken)
     .digest("hex");
-
   user.forgotPasswordExpiry = Date.now() + 10 * 60 * 1000;
-
   await user.save({ validateBeforeSave: false });
 
   const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
@@ -183,12 +201,10 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
       subject: "Password Reset Request",
       html,
     });
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Password reset link sent to your email!",
-      });
+    res.status(200).json({
+      success: true,
+      message: "Password reset link sent to your email!",
+    });
   } catch (err) {
     user.forgotPasswordToken = undefined;
     user.forgotPasswordExpiry = undefined;
@@ -208,7 +224,6 @@ exports.resetPassword = asyncHandler(async (req, res) => {
   }
 
   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-
   const user = await User.findOne({
     forgotPasswordToken: hashedToken,
     forgotPasswordExpiry: { $gt: Date.now() },
@@ -255,14 +270,11 @@ exports.updateUser = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("User not found");
   }
-
   delete req.body.password;
-
   const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true,
   }).select("-password");
-
   res.status(200).json(updatedUser);
 });
 
@@ -272,7 +284,6 @@ exports.deleteUser = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("User not found");
   }
-
   await user.deleteOne();
   res
     .status(200)
