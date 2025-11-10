@@ -13,7 +13,6 @@ const notificationRoutes = require("./routes/notificationRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const userdashboardRoutes = require("./routes/userDashboardRoutes");
 const couponRoutes = require("./routes/couponRoutes");
-
 const http = require("http");
 const { Server } = require("socket.io");
 const { startInventorySync } = require("./cron/scheduler");
@@ -24,24 +23,36 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
-const corsOptions = {
-  origin: "http://localhost:3000",
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://jewelen.vercel.app"
+];
 
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
 };
-app.use(cors(corsOptions));
 
-const io = new Server(server, {
-  cors: corsOptions,
-});
+app.use(cors(corsOptions));
+const io = new Server(server, { cors: corsOptions });
 app.set("socketio", io);
 app.use(express.json());
+
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
+
 app.get("/", (req, res) => {
   res.json({ message: "API server is running..." });
 });
+
 app.use("/api/auth", authRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/cart", cartRoutes);
@@ -56,7 +67,6 @@ app.use("/api/coupons", couponRoutes);
 
 io.on("connection", (socket) => {
   console.log("✅ A new user connected:", socket.id);
-
   socket.on("disconnect", () => {
     console.log("❌ User disconnected:", socket.id);
   });
@@ -65,7 +75,6 @@ io.on("connection", (socket) => {
 startInventorySync(io);
 
 const PORT = process.env.PORT || 5000;
-
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}.`);
 });
